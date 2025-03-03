@@ -1,30 +1,64 @@
 import React, { useState } from 'react';
-import { runwayApiRequest } from '../lib/runwayApi';
+import { runwayService } from '../lib/runwayService';
+import toast from 'react-hot-toast';
 
 const RunwayComponent = () => {
-    const [response, setResponse] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [prompt, setPrompt] = useState('');
+    const [videoId, setVideoId] = useState(null);
 
-    const handleRunwayRequest = async () => {
+    const handleVideoGeneration = async () => {
+        if (!prompt) {
+            toast.error('Please enter a prompt');
+            return;
+        }
+
         try {
-            const data = {
-                prompt: "Generate an AI video of cat and dogs", // Check Runway API docs for required fields
-                model: "your_model_name", // Required if using specific AI models
-            };
-            const result = await runwayApiRequest('/v1/generate', data); // Adjust API path
-            console.log(result);
+            setLoading(true);
+            const result = await runwayService.createVideo(
+                "YOUR_IMAGE_URL", // Replace with actual image URL
+                {
+                    id: "TEMPLATE_ID", // Replace with actual template ID
+                    title: "Video Generation",
+                    prompt: prompt,
+                    style: "cinematic",
+                    duration: 10
+                }
+            );
+
+            setVideoId(result.videoId);
+            toast.success('Video generation started!');
         } catch (error) {
-            console.error('API Request Failed:', error.response?.data || error.message);
+            toast.error(error.message);
+        } finally {
+            setLoading(false);
         }
     };
-    
 
     return (
-        <div>
-            <button onClick={handleRunwayRequest} disabled={loading}>
-                {loading ? 'Processing...' : 'Send to Runway'}
+        <div className="p-4">
+            <div className="mb-4">
+                <input 
+                    type="text"
+                    className="w-full p-2 border rounded"
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    placeholder="Enter your video generation prompt"
+                />
+            </div>
+            <button 
+                onClick={handleVideoGeneration}
+                disabled={loading}
+                className="bg-blue-500 text-white px-4 py-2 rounded"
+            >
+                {loading ? 'Generating...' : 'Generate Video'}
             </button>
-            {response && <pre>{JSON.stringify(response, null, 2)}</pre>}
+            {videoId && (
+                <div className="mt-4">
+                    <p>Video ID: {videoId}</p>
+                    <p>Check your dashboard for the video status</p>
+                </div>
+            )}
         </div>
     );
 };
